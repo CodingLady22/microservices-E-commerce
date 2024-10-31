@@ -11,6 +11,8 @@ const tracing = require("../lib/tracing")(
   `${config.serviceName}:${config.serviceVersion}`
 );
 
+const axios = require('axios');
+
 // Import necessary dependencies
 const http = require("http"); // HTTP server functionality
 
@@ -30,6 +32,46 @@ const server = http.createServer(app);
 server.on("listening", () => {
   const addr = server.address();
   const bind = typeof addr === "string" ? `pipe ${addr}` : `port ${addr.port}`;
+
+  // Register service on start up
+  const register = async () => 
+    axios.put(`http://127.0.0.1:3080/register/${config.serviceName}/${config.serviceVersion}/${server.address().port}`).catch((err) => console.error(err));
+
+    // Unregister service on start up
+    const unregister = async () => 
+      axios.delete(`http://127.0.0.1:3080/register/${config.serviceName}/${config.serviceVersion}/${server.address().port}`).catch((err) => console.error(err));
+  
+    register();
+
+  // heartbeat to prevent service from timing out
+  const interval = setInterval(register, 10000);
+
+  const cleanup = async () => {
+    const clean = false;
+    if (!clean) {
+      clearInterval(interval);
+      await unregister();
+    }
+  };
+
+  process.on("uncaughtException", async (error) => {
+    console.error("Uncaught Exception:", error);
+    await cleanup();
+    process.exit(1);
+  });
+
+  process.on("SIGTERM", async () => {
+    console.log("SIGTERM received. Shutting down gracefully.");
+    await cleanup();
+    process.exit(0);
+  });
+
+  process.on("SIGINT", async () => {
+    console.log("SIGINT received. Shutting down gracefully.");
+    await cleanup();
+    process.exit(0);
+  });
+  
   console.info(
     `${config.serviceName}:${config.serviceVersion} listening on ${bind}`
   );

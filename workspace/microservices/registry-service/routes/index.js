@@ -24,7 +24,7 @@ router.put("/register/:servicename/:serviceversion/:serviceport", (req, res, nex
 });
 
 // delete a service
-router.delete("/register/:servicename/:serviceversion/:serviceport", (req, res, next) => {
+router.delete("/unregister/:servicename/:serviceversion/:serviceport", (req, res, next) => {
     const {servicename, serviceversion, serviceport, serviceip} = getRequestArguments(req);
     const key = registry.unregister(servicename, serviceversion, serviceport, serviceip);
     return res.json({ report: key });

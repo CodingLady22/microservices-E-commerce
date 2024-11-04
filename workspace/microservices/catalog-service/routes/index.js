@@ -4,11 +4,16 @@ const CatalogService = require("../lib/CatalogService")
 
 const router = express.Router();
 
+// Helper function to sanitize data
+function createResponse (item) {
+  return {id: item.id, price: item.price, sku: item.sku, name: item.name}
+}
+
 // Get all items
 router.get("/items", async (req, res) => {
 try {
   const items = await CatalogService.getAll();
-  return res.json(items);
+  return res.json(items.map(createResponse));
 } catch (error) {
   console.error(error);
   return res.status(500).json({error: "Internal Server Error"})
@@ -22,7 +27,7 @@ router.get("/items/:id", async (req, res) => {
     if(!item) {
       return res.status(404).json({error: "Item not found."})
     }
-    return res.json(item);
+    return res.json(createResponse(item));
   } catch (error) {
     console.error(error);
     return res.status(500).json({error: "Internal Server Error"})
@@ -47,7 +52,7 @@ router.get("/items/:id", async (req, res) => {
       if(!updateItem) {
         return res.status(404).json({error: "Item not found."})
       }
-      return res.json(updateItem);
+      return res.json(createResponse(updateItem));
     } catch (error) {
       console.error(error);
       return res.status(500).json({error: "Internal Server Error"})
